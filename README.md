@@ -615,6 +615,7 @@ To be efficient, my code has to do:
 - use standard import if no version needed,
 - if version needed, custom import,
 - make sure to fill sys.modules with the versioned name in such case.
+
 My answer on Discourse before the above analysis had the following
 drawbacks :
 - Ok the spec guarantees that you do not jump between branches of
@@ -635,13 +636,14 @@ drawbacks :
     in custom or `default _dependencies_versions.json`.
     The same stack must be used at the initial import execution of
     code in C.
+
 Proof that the dynamic "cursor" in `custom_dependencies_versions.json`
 is unique: I want the longest matching branch,
-    if I'm outside of the starting branch (too deep),
-    the suffix (top) of the stack may match another
-    smaller branch beginning.
-    Customizing fully is not a requirement, and the default only uses
-    branches of depth 1, but the longest branch is unique,
-    and the "roots" tags are also unique,
-    so only one cursor at a time.
+if I'm outside of the starting branch (too deep),
+the suffix (top) of the stack may match another
+smaller branch beginning.
+Customizing fully is not a requirement, and the default only uses
+branches of depth 1, but the longest branch is unique,
+and the "roots" tags are also unique,
+so only one cursor at a time.
 
