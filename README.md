@@ -334,7 +334,8 @@ D is imported with its submodule D.d<br>
 C imports D
 D is imported with its submodule D.d
 
-hence on A level:
+hence on A level (approximately):
+```
   from B import D as BD
   from B import d as Bd
   from C import D as CD
@@ -350,12 +351,48 @@ hence on A level:
   Bd.wat()
   CD.wat()
   Cd.wat()
+```
 
 Everything is doubled with U and V prefixes,
 for unversioned et versioned.
 
 Look at venv_skeleton in this repository to see the Python code of the
 dependencies.
+
+Here is the output of the POC:
+```
+$ python3 bla4.py
+No /home/laurent/Données/MesProjetsGit/venv_versionned_dependencies/lib/python3.13/site-packages/custom_dependencies_versions.json
+{'d_d_r_versioned_A': '2.2.2', 'd_d_r_versioned_B': '2.2.2', 'd_d_r_versioned_C': '2.2.2', 'd_d_r_versioned_D': '3.3.3'}
+{'d_d_r_unversioned_A': {'d_d_r_versioned_B': '1.1.1', 'd_d_r_versioned_C': '2.2.2'}, 'd_d_r_versioned_A/1.1.1': {'d_d_r_versioned_B': '1.1.1', 'd_d_r_versioned_C': '1.1.1'}, 'd_d_r_versioned_A/2.2.2': {'d_d_r_versioned_B': '2.2.2', 'd_d_r_versioned_C': '2.2.2'}, 'd_d_r_unversioned_B': {'d_d_r_versioned_D': '1.1.1'}, 'd_d_r_versioned_B/1.1.1': {'d_d_r_versioned_D': '2.2.2'}, 'd_d_r_versioned_B/2.2.2': {'d_d_r_versioned_D': '3.3.3'}, 'd_d_r_unversioned_C': {'d_d_r_versioned_D': '3.3.3'}, 'd_d_r_versioned_C/1.1.1': {'d_d_r_versioned_D': '2.2.2'}, 'd_d_r_versioned_C/2.2.2': {'d_d_r_versioned_D': '1.1.1'}}
+{}
+Hello, you're in unversioned A 🤪
+Hello, you're in unversioned A.a 🤪
+Hello, you're in unversioned B 🤪
+Hello, you're in unversioned B.b 🤪
+Hello, you're in B 1.1.1 🤪
+Hello, you're in B.b 1.1.1 🤪
+Hello, you're in unversioned C 🤪
+Hello, you're in unversioned C.c 🤪
+Hello, you're in C 2.2.2 🤪
+Hello, you're in C.c 2.2.2 🤪
+Hello, you're in unversioned D 🤪
+Hello, you're in unversioned D.d 🤪
+Hello, you're in unversioned D 🤪
+Hello, you're in unversioned D.d 🤪
+Hello, you're in D 1.1.1 🤪
+Hello, you're in D.d 1.1.1 🤪
+Hello, you're in D 3.3.3 🤪
+Hello, you're in D.d 3.3.3 🤪
+Hello, you're in unversioned D 🤪
+Hello, you're in unversioned D.d 🤪
+Hello, you're in unversioned D 🤪
+Hello, you're in unversioned D.d 🤪
+Hello, you're in D 2.2.2 🤪
+Hello, you're in D.d 2.2.2 🤪
+Hello, you're in D 1.1.1 🤪
+Hello, you're in D.d 1.1.1 🤪
+```
 
 ## Help needed
 
