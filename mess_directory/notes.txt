@@ -1,0 +1,663 @@
+2026/01/08
+Laurent Frédéric Bernard François Lyaudet
+
+Keeping the structure of a venv,
+the goal is to have some packages installed in a "versioned" way.
+Such an install is materialized by the use of:
+  site-packages/my_package/1.1.1/
+                          /2.2.2/
+                          etc.
+instead of:
+  site-packages/my_package/
+The .dist-info files are already versioned,
+nothing to change for them,
+just allow that there can be multiple ones for the same package.
+Example:
+------------------------------------
+├── python_dependencies_done_right_A
+│   ├── 1.1.1
+│   │   └── __init__.py
+│   ├── 2.2.2
+│   │   └── __init__.py
+│   └── 3.3.3
+│       └── __init__.py
+├── python_dependencies_done_right_B
+│   ├── 1.1.1
+│   │   └── __init__.py
+│   ├── 2.2.2
+│   │   └── __init__.py
+│   └── 3.3.3
+│       └── __init__.py
+├── python_dependencies_done_right_C
+│   ├── 1.1.1
+│   │   └── __init__.py
+│   ├── 2.2.2
+│   │   └── __init__.py
+│   └── 3.3.3
+│       └── __init__.py
+├── python_dependencies_done_right_D
+│   ├── 1.1.1
+│   │   └── __init__.py
+│   ├── 2.2.2
+│   │   └── __init__.py
+│   └── 3.3.3
+│       └── __init__.py
+------------------------------------
+This is the responsibility of the package manager, like pip, to fill
+the following two files on install and updates:
+  versioned_packages.json,
+  default_dependencies_versions.json.
+The provisional location of these files is next to site-packages/
+in lib/python3.13/ for example.
+Another file custom_dependencies_versions.json must be at the same
+location.
+
+Filling versioned packages is trivial,
+it can be an option like:
+  pip install --versioned_package my_package=1.1.1 .
+In such a case, pip would have to add my_package in the list
+versioned_packages.json if not present,
+and convert any "unversioned" previous single install of my_package
+into a versioned one (mkdir and mv -r),
+then install correctly as a versioned install the new version of
+my_package (mkdir -p with one more intermediate directory).
+Note that a versioned package can have unversioned dependencies.
+It is a manual decision of the user to "version" any dependency with a
+targeted reinstall.
+An option --versioned_package_and_dependencies would not be hard
+to implement,
+in order to "version" all dependencies outside of builtins.
+If a package is versioned,
+so must be the case of all the installed packages that
+have it as a dependency,
+this propagation can be done in any order,
+because the directory modifications
+and adding in versioned_packages.json
+can be done in any order.
+Example of versioned_packages.json:
+----------------------------------------------------------------------
+[
+  "python_dependencies_done_right_A",
+  "python_dependencies_done_right_B",
+  "python_dependencies_done_right_C",
+  "python_dependencies_done_right_D"
+]
+----------------------------------------------------------------------
+
+Filling default_dependencies_versions.json is also quite trivial,
+you just need to compare
+"the (almost) cardinal product of versioned_packages.json" by itself:
+couples in (some_versioned_package1, some_versioned_package2),
+1 and 2 must not be the same,
+with the dependencies constraints of all such packages in a loop.
+If a constraint says
+"Package A needs package B between 1.1.1 and 4.4.4" for example:
+if B is not "versioned",
+then you just check that the unique version is correct,
+otherwise you need to find a version of B that is OK for all packages
+as usual (output an error if no such version exists);
+if B is versioned so is A,
+(hence the almost cardinal product intersected by constraints),
+so you fill default_dependencies_versions.json with a line with 
+A x.x.x needs latest installed compatible version of B that is y.y.y,
+if such a compatible version does not exist,
+you install the latest compatible one
+(in a versioned way along the existing one(s),
+B is already versioned).
+You can loop on the installs in the order you want,
+you can not have an infinite loop
+since there is a finite number of versions to install,
+the trivial "Rinse & repeat/recursive calls" approach just works.
+Example of default_dependencies_versions.json:
+----------------------------------------------------------------------
+{
+  "python_dependencies_done_right_A": {
+    "1.1.1": {
+      "python_dependencies_done_right_B": "1.1.1",
+      "python_dependencies_done_right_C": "1.1.1",
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_B": "2.2.2",
+      "python_dependencies_done_right_C": "2.2.2",
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_B": "3.3.3",
+      "python_dependencies_done_right_C": "3.3.3",
+      "python_dependencies_done_right_D": "3.3.3" 
+    }
+  },
+  "python_dependencies_done_right_B": {
+    "1.1.1": {
+      "python_dependencies_done_right_C": "1.1.1",
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_C": "2.2.2",
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_C": "3.3.3",
+      "python_dependencies_done_right_D": "3.3.3" 
+    } 
+  },
+  "python_dependencies_done_right_C": {
+    "1.1.1": {
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_D": "3.3.3" 
+    } 
+  }
+}
+----------------------------------------------------------------------
+
+The cherry on the cake is just a by-product:
+you can fill a file:
+custom_dependencies_versions.json
+that overloads default_dependencies_versions.json.
+Example of default_dependencies_versions.json:
+----------------------------------------------------------------------
+{}
+----------------------------------------------------------------------
+no overloading, or
+----------------------------------------------------------------------
+{
+  "python_dependencies_done_right_A": {
+    "2.2.2": {
+      "python_dependencies_done_right_C": "1.1.1",
+    }
+  }
+}
+----------------------------------------------------------------------
+
+For a simple addition to the loading mechanism
+but already very useful, you just fill
+  custom_dependencies_versions.json
+with relations limited to A x.x.x needs B y.y.y.
+If you want to do more efforts and less trivial code,
+you can extend it as I explained in:
+https://github.com/LLyaudet/DevOrSysAdminScripts/
+commit/d4aa104a0f1cd78f4fbb5ee74814a04c0f176266
+to handle nested dependencies constraints overloading
+of arbitrary depth.
+
+For the sake of completeness, I repeat what I wrote in this commit,
+but I had this idea many years ago.
+----------------------------------------------------------------------
+Why one venv for each Python dependency ?
+Because no language of my knowledge did it right to handle all
+possible dependency conflicts.
+So in case of such a conflict, one specialized venv can get you out
+of any problem.
+The best solution would have been to allow install of different
+versions of the same package, and have a mechanism:
+- first intent, use the latest available version of a package among
+those that satisfy the declared dependency constraints of the package
+that has this dependency;
+- second intent, check a dependency overload configuration file
+with tree structure: if calling python package is A version 1.1.1
+with dependency B itself with dependency C, use B 2.2.2 and C 3.3.3;
+you could have along that another rule saying that when called
+directly B 2.2.2 should use C 4.4.4;
+and even more complicated:
+if calling python package is A version 1.1.1 with dependency B and D
+both themselves with dependency C, use B 2.2.2, D 0.1.0,
+and C 3.3.3 for B, and C 4.4.4 for D;
+once you've seen that it can never be more complicated than that,
+once the same version number guarantees that the code is the same,
+you create a config language "à la CSS" for cascading dependencies ;)
+XD fit into JSON the dumbest possible way and you stop bothering
+about dependency conflicts for the rest of history of informatics.
+{
+ "A":{
+  "1.1.1": {
+    "B": {
+      "2.2.2": {
+        "C": {
+           // Dumb, you did not found it by yourself? Failed exam.
+          "3.3.3" : {}
+        }
+      }
+    },
+    "D": {
+      "0.1.0": {
+        "C": {
+           // Dumb, you did not found it by yourself? Failed exam.
+          "4.4.4" : {}
+        }
+      }
+    }
+  },
+  "B": {
+    "2.2.2": {
+      "C": {
+        // Dumb, you did not found it by yourself? Failed exam.
+        "4.4.4" : {}
+      }
+    }
+  }
+}
+Wonderful someone rediscovered nested structures XD
+Seriously so many engineers or computer scientists are dumb to cry.
+----------------------------------------------------------------------
+To extend on that,
+this solution works for solvable dependency conflicts.
+I exchanged with people in Python discourse there:
+https://discuss.python.org/t/dependencies-conflicts/105582/9
+To explain my arguments there (sorry for the harsh tone):
+- a remark was done about the case of incompatible data structures
+between 2 versions of the same dependency library;
+my technical answer was:
+-------------
+To give a full answer to your remark on data structures:
+Your code is your responsibility.
+When you use library A and library B and their data structures are not
+compatible,
+you do more or less boilerplate code to modify data structures so that
+they communicate through your code.
+Now, it is exactly the same problem,
+if you have to make data structures of A 1.1.1 communicate with
+A 2.2.2.
+You just do the same kind of boilerplate code.
+It may be inefficient, but it works.
+In Python, it may be just looping on the elements of the “in”
+structure to make it a new “out” structure.
+Once everything is dealed with on the levels below,
+you do the required “interfacing” work
+(not to be confused with the restricted meaning of an interface
+in OOP).
+--------------
+before that my two rant answers were:
+--------------
+Classical “Nay-saying” and Not at all pertinent.
+In my suggestion, the default mechanism is unchanged.
+What I suggest is an overloading mechanism.
+I do agree that with such mechanisms you can always shot yourself in
+the foot.
+But at least you have full control and all the dependency conflicts
+can be resolved if you assume that any released version had a working
+dependency set.
+My solution removes the blocking points of the current solution.
+If you do no matter what, and use a set of dependencies that has no
+way to work, then it doesn’t work; but it’s “tautological”.
+The only real drawback of giving this full power to the user is that
+it may be used by crackers to do no matter what once they have set
+foot on the PC of someone else.
+But usually they do no matter what with or without this option.
+It’s just another thing to know about your system.
+-----------------
+Sorry for the harsh tone, but @some_guy@ moved my topic from Ideas to
+Python Help which is inappropriate and looks kind of
+censorship/downgrading behind good looking noob management.
+----------------
+
+After that, I answered to multiple objections that are not really
+technical:
+----------
+  "citation": not going to fly
+It is ambiguous when you say that it is not going to fly.
+It may mean “You can always ask, but nobody will do the change.”
+which is probable, whilst the fact that it would not work is false.
+
+For the users having to structure their code,
+it is only if they need to handle such interfacing problems.
+So nothing is taken away from users, they don’t loose anything.
+They just have new solutions: for all dependencies conflicts below,
+they have a simple solution,
+for dependencies conflicts in their own code,
+they have a way to handle it through boilerplate code.
+It brings solutions to the table,
+previously they had none other than looking for other packages
+as dependencies or recode part of a dependency.
+Nothing is perfect, nothing is free of some burden,
+nothing justifies that on Internet the majority of persons that react
+are nay-sayers.
+  "citation": no performance penalty argument
+A solution with a performance penalty *notable only when it is used*
+is always better than no solution.
+Your argument is a classical fake argument of nay-sayers
+and doesn’t imply that they always do very optimized code.
+Moreover, when the Python interpreter resolves an import it must load
+the function tokens and their adresses to use them afterward;
+resolving two imports for two distinct versions of the same library
+would prepare similarly what is needed to use some adress when some
+function token is parsed without conflicting because of the distinct
+contexts (or the distinct tokens in the user code),
+I see no reason that the interpreter would be slowed down apart of the
+additional tokens to keep in memory;
+the penalty for the performance and memory would be measured;
+it would be mainly on the import mechanism that it could be slowed
+down very slightly in my opinion,
+and once the import is done,
+I see no reason for a substantial penalty.
+If you think otherwise, please explain your reasoning.
+
+ " citation": it works only for toy projects, years of experience,
+    try it
+Fine, when you say that, you perfectly know that the entry cost on a
+project like Python is high, and that almost nobody has the time
+to understand the internals of a project like Python just to make a
+proof of concept and experience further bashing afterwards.
+I’m already struggling to redo most of my own Free Software work
+because of sabotage.
+Weeks or months of work that vanishes in thin air.
+I’m always struggling because of crackers and intelligence services
+and I don’t know who mess with my code to enshittify my life.
+If I take now two weeks of work to make a proof of concept,
+I am almost certain that they will not let me succeed or find a way
+to screw another of my projects during the time.
+I don’t have yet taken the decision to do or not a proof of concept
+but you don’t imagine how mad I am against people that steal the life
+of others and nobody helps.
+-------------------
+
+Then the person I just answered to,
+kindly suggested that it can be done in pure Python,
+without needing to know the internals of Python in C,
+but just modifying import.
+But he was still thinking that there would be serious drawbacks
+that I don't see.
+
+Another people also answered:
+  "citation": spec easy, craft difficult
+and I responded:
+-------
+Do you care to explain where are the identified blocking points?
+From my point of view, you need the following ingredients:
+ - given current state of the interpreter it is currently executing
+   the code of the following import (package and version)
+   thus any new import there is resolved by consulting the overloading
+   file for dependencies if any, and backing on the default mechanism
+   (it can move inside the tree of nested dependencies in the
+   overloading in parallel of the moves inside the code,
+   when it is outside of this tree, it only needs to check when it’s
+   back at the root in case further code executed is in an existing
+   branch)
+   when an import is processed the current context gets the right
+   adresses for tokens,
+   tokens are resolved with the right adresses in the current context
+   as usual.
+I don’t see a conceptual blocking point.
+If there is an ingredient of an interpreter that is relevant
+and that I don’t see, please point at it.
+---------
+This analysis was crude, and I will do things differently.
+First, I will do the simple and most useful case where I load
+a versioned module, hence I hope I can know when an import occurs
+there, that the current module has "this name, this version",
+use a custom finder to locate the corresponding dependency with
+correct version ("if needed" is directly handled by the
+cascade/fallback mechanism of finders/loaders; or I hope so that
+when I have site-packages/my_package/1.1.1/
+instead of site-packages/my_package/,
+standard finders/loaders fail this import and my custom one can come
+into play => no performance penalty for anyone not using my feature!
+Fed up of having to battling with fake argument
+"Cannot be done efficiently".),
+put it with a versioned name in sys.modules
+(it should never conflict and the only possible drawback may be that
+there will be more modules in sys.modules;
+note that since B versioned implies A versioned, you can never need
+to have to add "B" and "B:x.x.x" in sys.modules,
+checking if the import is done in A or in A' will always yield a
+search in sys.modules with "B:x.x.x" or "B:x'.x'.x'".),
+alias for context and execute.
+Appart from the custom finder, the difficulty may be to use
+sys.modules, because a finder cannot return a module, and hence I
+cannot use sys.modules inside it.
+To be efficient, my code would have to be:
+- only one JSON import for versioned_packages.json,
+  same for default_dependencies_versions.json,
+  and custom_dependencies_versions.json, so it needs to go in a global
+  init/pre-execute of the Python "launcher",
+  problem with interactive mode,
+  needs a command to reload these files,
+  no responsibility if the user does funny things like using pip in
+  one shell in parallel of using python3 in interactive mode
+  in another shell,
+  it must already be bugged in such case,
+- import demanded,
+- get current module name and version
+  (maybe top version of main program is a problem
+  since it is outside pypi, I need to think about it,
+  since the dependency file is used to fill the venv or the docker),
+- if current name and version in versioned_packages.json
+  (I can cheat the previous point here,
+  with a fake entry in versioned_packages.json
+    "MyDjangoProject": { "1.1.1": ... },
+  matched with a constant of the current code like
+    MAIN_ID_FOR_DEPENDENCY_VERSIONNING="MyDjangoProject"
+  in my Python main code
+  using a default version 1.1.1, not a true problem, positive people
+  will probably have better ideas for that, need to have that constant
+  in all files context),
+- check custom_dependencies_versions.json for a match between
+  "A and B", save for later the matching B version if match
+- if no match, check default_dependencies_versions.json for a match
+  between "A and B",
+  guaranteed to work for versioned packages, no bug,
+  save for later the matching B version if match
+- lookup sys.modules using the B version if found
+- use the standard finders,
+- if all standard finders fail, use your custom one,
+- make sure to fill sys.modules with the versioned name in such case.
+Nothing else should be a problem from an interpreted Python
+point of view.
+My answer on Discourse before the above analysis had the following
+drawbacks :
+- Ok the spec guarantees that you do not jump between branches of
+  dependencies, and that you only go upward or downward in the tree
+  of custom_dependencies_versions.json.
+  But "doubling" the work of executing the Python code and following
+  where we are in custom_dependencies_versions.json would be slower.
+  The POC limits to simple A -> B and B -> C independently
+  avoids that.
+  Otherwise I need a stack:
+    on module change stack the element*s* needed,
+    if I got A -> B -> C and code in A does import B.C as C,
+    I need to keep track that when I call C.wat() I add "B:x.x.x"
+    and "C:y.y.y" AND "Return-2" to the stack.
+    If I do an import in C.wat(), I must use the stack to know if
+    some ***suffix after ignoring "Return-i" values*** of it matches
+    a branch rooted at the top
+    in custom or default _dependencies_versions.json.
+    The same stack must be used at the initial import execution of
+    code in C.
+    Thus the function calls are tagged with the modifications of the
+    stack to do at call. Hence, we need a dict with key
+    "stack:module:version:file_path_inside_module:line of code"
+    to have these tags,
+    and the interpreter needs to query this dict on each function call
+    :( (I say line of code when I mean
+    "byte code instruction line/counter" but if the bytecode is
+    generated on the fly it needs to be counted since the "file break"
+    ).
+    :) :) :) If I don't handle imports in functions, then it's ok :).
+    I don't need to tag the function calls, the stack at imports is
+    enough. And until now, I never saw imports in packages functions,
+    I coded such imports in our Django projects
+    but the Django project was our "root/main" level,
+    so the stack above doesn't count.
+    It is a reasonable limitation :).
+    And in that case, I can probably do without the "Returns-2", etc.
+Proof that the dynamic "cursor" in custom_dependencies_versions.json
+is unique: I want the longest matching branch,
+    if I'm outside of the starting branch (too deep),
+    the suffix (top) of the stack may match another
+    smaller branch beginning.
+    Customizing fully is not a requirement, and the default only uses
+    branches of depth 1, but the longest branch is unique,
+    and the "roots" tags are also unique,
+    so only one cursor at a time.
+
+frame2 = inspect.currentframe()
+frame1 = frame2.f_back
+frame0 = frame1.f_back
+
+'code': <module 'code' from '/usr/lib/python3.13/code.py'>
+
+frame1.f_globals['__name__']
+VS frame0.f_globals[frame1.f_globals['__name__']] à tester
+
+2026/01/13:
+4 levels of import: A B C D
+
+A imports B C D
+B is imported normally, with its submodule B.b
+  import B
+  from B import b
+C is imported from the submodule A.a de A,
+  with its submodule C.c
+  import C
+  from C import c
+  ---------------
+  import a
+  from a import C
+  from a import c
+
+B importe D
+D is imported with its submodule D.d
+  import D
+  from D import d
+
+C importe D
+D is imported with its submodule D.d
+  import D
+  from D import d
+
+hence on A level:
+  from B import D as BD
+  from B import d as Bd
+  from C import D as CD
+  from C import d as Cd
+
+  A.wat()
+  a.wat()
+  B.wat()
+  b.wat()
+  C.wat()
+  c.wat()
+  BD.wat()
+  Bd.wat()
+  CD.wat()
+  Cd.wat()
+
+Everything is doubled with U and V prefixes,
+for unversioned et versioned.
+
+import inspect
+import json
+import sys
+
+# This part should be improved, but remember it is just a POC.
+# POC: no customisation on a path element basis
+# We take the venv path:
+last_path = sys.path[-1]
+# POC: no error handling
+with open(f"{last_path}/versioned_packages.json", 'r') as file:
+    versioned_packages = json.load(file)
+with open(
+    f"{last_path}/default_dependencies_versions.json", 'r'
+) as file:
+    default_dependencies_versions = json.load(file)
+print(versioned_packages)
+print(default_dependencies_versions)
+
+import sys
+builtins = sys.modules['builtins']
+
+old_import = builtins.__import__
+
+def new_import(*args, **kwargs):
+    print(args, kwargs)
+    print("ahah")
+    old_import(*args, **kwargs)
+   
+builtins.__import__ = new_import
+
+old_import = builtins.__import__
+
+def new_import(self, *args, **kwargs):
+    print("ahah")
+    old_import(self, *args, **kwargs)
+   
+builtins.__import__ = new_import
+
+class ExampleImporter(object):
+    old_import = builtins.__import__
+    def new_import(self, *args, **kwargs):
+        print("ahah")
+        # print(args, kwargs)
+        return self.old_import(*args, **kwargs)
+importer = ExampleImporter()
+
+builtins.__import__ = importer.new_import
+
+def new_import(*args, **kwargs):
+    name = args[0]
+    if name in versioned_packages:
+        
+        frame2 = inspect.currentframe()
+        .f_globals['__name__']
+        frame1 = frame2.f_back
+        frame0 = frame1.f_back
+        name = 
+    old_import(*args, **kwargs)
+
+import builtins
+
+old_import = builtins.__import__
+versioned_packages = {}
+default_dependencies_versions = {}
+custom_dependencies_versions = {}
+inspect = None
+sys = None
+
+def new_import(name, *args, **kwargs):
+    # Avoid loops if you're in the interactive interpreter.
+    # Use it with bash: export PYTHONSTARTUP=this_script.py
+    if name in ("posix", "readline"):
+        return
+    if name in versioned_packages:
+        version = versioned_packages[name]
+        frame2 = inspect.currentframe()
+        print(frame2.f_globals['__name__'])
+        print(frame2.f_globals['__package__'])
+        frame1 = frame2.f_back
+        print(frame1.f_globals['__name__'])
+        print(frame1.f_globals['__package__'])
+        frame0 = frame1.f_back
+        print(frame0.f_globals['__name__'])
+        print(frame0.f_globals['__package__'])
+    print(f"Importing {name}"}
+    return old_import(name, *args, **kwargs)
+
+builtins.__import__ = new_import
+
+import inspect
+import json
+import sys
+# This part should be improved, but remember it is just a POC.
+# POC: no customisation on a path element basis
+# We take the venv path:
+last_path = sys.path[-1]
+# POC: no error handling
+with open(f"{last_path}/versioned_packages.json", 'r') as file:
+    versioned_packages = json.load(file)
+with open(
+    f"{last_path}/default_dependencies_versions.json", 'r'
+) as file:
+    default_dependencies_versions = json.load(file)
+print(versioned_packages)
+print(default_dependencies_versions)
+
+import d_d_r_versioned_A
+
+2026/01/14:
+Pas de support des imports relatifs ".a" car il faudrait modifier
+"import" et pas juste "__import__".

@@ -1,0 +1,44 @@
+{
+  "python_dependencies_done_right_A": {
+    "1.1.1": {
+      "python_dependencies_done_right_B": "1.1.1",
+      "python_dependencies_done_right_C": "1.1.1",
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_B": "2.2.2",
+      "python_dependencies_done_right_C": "2.2.2",
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_B": "3.3.3",
+      "python_dependencies_done_right_C": "3.3.3",
+      "python_dependencies_done_right_D": "3.3.3" 
+    }
+  },
+  "python_dependencies_done_right_B": {
+    "1.1.1": {
+      "python_dependencies_done_right_C": "1.1.1",
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_C": "2.2.2",
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_C": "3.3.3",
+      "python_dependencies_done_right_D": "3.3.3" 
+    } 
+  },
+  "python_dependencies_done_right_C": {
+    "1.1.1": {
+      "python_dependencies_done_right_D": "1.1.1"
+    },
+    "2.2.2": {
+      "python_dependencies_done_right_D": "2.2.2" 
+    },
+    "3.3.3": {
+      "python_dependencies_done_right_D": "3.3.3" 
+    } 
+  }
+}
