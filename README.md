@@ -138,6 +138,9 @@ usually, the fact that all your code base uses a single version of a
 package complicates the upgrade, but once upgraded you're safer
 since known vulnerabilities have been corrected.
 
+Not platform independent yet. I used slashes for paths and did not
+care yet to make it work on Windows.
+
 ## How it works?
 
 Keeping the structure of a venv,
