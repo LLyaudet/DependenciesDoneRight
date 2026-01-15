@@ -369,8 +369,8 @@ C is imported from the submodule A.a de A<br>
 B imports D<br>
 D is imported with its submodule D.d<br>
 
-C imports D
-D is imported with its submodule D.d
+C imports D<br>
+D is imported with its submodule D.d<br>
 
 hence on A level (approximately):
 ```
