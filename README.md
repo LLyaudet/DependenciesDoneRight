@@ -106,8 +106,8 @@ Note that "shitty pants" is frequent and not an excuse for not solving
 what can be solved at one level. ("Make it work" as your boss says.)
 
 Not "Python full feature" yet.
-Relative imports like ".a" do not work,
-since it would require to modify "import" on top of "__import__".
+Relative imports like ".a" in versioned packages do not work,
+since it would require to modify `import` on top of `__import__`.
 (Could be solved by a version modifying CPython.)
 Some parts of the standard library like importlib are not overriden
 in this POC like reload that uses sys.modules for example.
