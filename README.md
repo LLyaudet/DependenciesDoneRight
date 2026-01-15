@@ -141,6 +141,43 @@ since known vulnerabilities have been corrected.
 Not platform independent yet. I used slashes for paths and did not
 care yet to make it work on Windows.
 
+In "my great vision", all software could be on multiple versions on
+the same system.
+Some software that is far enough of the hardware and far enough of the
+shinny innovations never needs to change.
+But it may rely on some software closer to the hardware
+that does change.
+You could have packages that never change unless a CVE or another flaw
+is found, in which case their code could be archived outside of the
+PATH and replaced by
+```
+raise BlacklistedPackageVersion("@PackageName@ @Version@")
+```
+This approach combined with Formal verification
+<https://en.wikipedia.org/wiki/Formal_verification>
+could allow to keep a proved base of code that may not be the fastest
+code or the one with the more features,
+alongside of other packages that are not verified at the same level
+yet.
+Moreover, a formal verification may have missed some points on the
+specifications, and there is still a possibility that a CVE can be
+found on a verified program, if the kind of flaw was not verified for.
+It could almost be automatic Darwinism of packages versions ;P :
+Flaw found -> Blacklisted version, try to reconfigure the dependencies
+versions links between packages to keep the system working,
+otherwise human intervention needed to repare.
+It could be an interesting experiment :)
+(for those with spare servers ;) XD).
+An alternative to some of the uses of images and containers.
+It would prevent duplication that is heavily found with solutions
+like snap or flatpack for example.
+But maybe the increase of the versions to keep would also yield
+a substantial amount of used memory.
+Regarding the sandboxing, I have no clue how it could work using
+namespaces and cgroups: there should be a way, maybe faster
+(sligtly, more than slightly?), but maybe less secure,
+unless all elements of virtualization apart duplicated code are there.
+
 ## How it works?
 
 Keeping the structure of a venv,
