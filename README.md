@@ -124,7 +124,7 @@ software, since the feature is backward compatible.
 
 Biggest con: Fight the bureaucracy of many software projects to make
 it happen. Welcome Inertia ;P XD. Welcome Ineptia XD XD XD
-The correct word is ineptness.).
+(The correct word is ineptness.).
 
 Very nasty bugs may be possible with this approach.
 
