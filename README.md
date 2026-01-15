@@ -123,7 +123,8 @@ and only then the needed developments could be done in pip or other
 software, since the feature is backward compatible.
 
 Biggest con: Fight the bureaucracy of many software projects to make
-it happen. Welcome Inertia ;P XD.
+it happen. Welcome Inertia ;P XD. Welcome Ineptia XD XD XD
+The correct word is ineptness.).
 
 Very nasty bugs may be possible with this approach.
 
